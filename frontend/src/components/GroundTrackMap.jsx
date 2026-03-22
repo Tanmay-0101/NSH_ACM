@@ -127,11 +127,15 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
         ctx.fillText(gs.name, x + 9, y + 3);
       });
 
-      // Debris cloud
-      ctx.fillStyle = 'rgba(255,100,50,0.5)';
-      debrisCloud.forEach(([, lat, lon]) => {
+      // Debris cloud — bright orange circles, visible at map scale
+      debrisCloud.forEach(([id, lat, lon]) => {
         const [x, y] = latlonToXY(lat, lon, W, H);
-        ctx.fillRect(x - 0.5, y - 0.5, 1.5, 1.5);
+        // Glow effect
+        ctx.fillStyle = 'rgba(255,80,20,0.25)';
+        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+        // Core dot
+        ctx.fillStyle = 'rgba(255,120,40,0.95)';
+        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
       });
 
       // Historical trails (last 90 min)
@@ -185,7 +189,7 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
           ctx.strokeStyle = '#ff3355';
           ctx.lineWidth = 2;
           ctx.globalAlpha = pulse;
-          ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.stroke();
           ctx.globalAlpha = 1;
         }
 
