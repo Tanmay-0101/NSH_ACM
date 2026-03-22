@@ -1,32 +1,48 @@
-from pydantic import BaseModel
-from typing import List
+"""
+models.py
+---------
+All Pydantic request/response models for the ACM API.
+"""
 
-# models for telemetry api
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+
+# ─────────────────────────────────────────
+# Telemetry ingestion
+# ─────────────────────────────────────────
+
 class Vector3D(BaseModel):
-    x:float
-    y:float
-    z:float
+    x: float
+    y: float
+    z: float
+
 
 class ObjectState(BaseModel):
-    id:str
-    type:str
-    r:Vector3D
-    v:Vector3D
+    id: str
+    type: str           # "SATELLITE" or "DEBRIS"
+    r: Vector3D         # position [km]
+    v: Vector3D         # velocity [km/s]
+
 
 class TelemetryRequest(BaseModel):
-    timestamp:str
-    objects:List[ObjectState]
+    timestamp: str      # ISO 8601
+    objects: List[ObjectState]
 
-# models for maneuever scheduling api
+
+# ─────────────────────────────────────────
+# Maneuver scheduling
+# ─────────────────────────────────────────
+
 class DeltaVVector(BaseModel):
-    x: float
+    x: float            # ECI [km/s]
     y: float
     z: float
 
 
 class BurnCommand(BaseModel):
     burn_id: str
-    burnTime: str
+    burnTime: str       # ISO 8601
     deltaV_vector: DeltaVVector
 
 
@@ -34,6 +50,10 @@ class ManeuverRequest(BaseModel):
     satelliteId: str
     maneuver_sequence: List[BurnCommand]
 
-#model for simulation step
+
+# ─────────────────────────────────────────
+# Simulation step
+# ─────────────────────────────────────────
+
 class SimulationStepRequest(BaseModel):
-    step_seconds: int
+    step_seconds: int = Field(gt=0, description="Number of seconds to advance simulation")
