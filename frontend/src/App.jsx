@@ -9,8 +9,8 @@ import { useSnapshot, useSimControl, useManeuverHistory } from './hooks';
 
 export default function App() {
   const { data, error, connected } = useSnapshot(1000);
-  const { step, stepping } = useSimControl();
-  const { history: maneuverHistory } = useManeuverHistory();
+  const { history: maneuverHistory, addFromStepResponse } = useManeuverHistory();
+  const { step, stepping } = useSimControl(addFromStepResponse);
   const [selectedSat, setSelectedSat] = useState(null);
   const [activePanel, setActivePanel] = useState('gantt');
 

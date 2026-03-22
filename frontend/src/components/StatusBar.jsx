@@ -1,23 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import AIBriefing from './AIBriefing';
 
 export default function StatusBar({ connected, data, onStep, stepping, simTime }) {
-  const [tick, setTick] = useState(0);
   const [stepSize, setStepSize] = useState(60);
 
-  useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const satCount = data?.satellites?.length || 0;
+  const satCount    = data?.satellites?.length || 0;
   const debrisCount = data?.debris_cloud?.length || 0;
-  const ts = data?.timestamp || simTime || '—';
+  const ts          = data?.timestamp || simTime || '—';
 
   return (
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 20,
+      gap: 16,
       padding: '0 16px',
       height: '100%',
       borderBottom: '1px solid var(--border-dim)',
@@ -44,13 +39,12 @@ export default function StatusBar({ connected, data, onStep, stepping, simTime }
 
       <div style={{ width: 1, height: 20, background: 'var(--border-dim)' }} />
 
-      {/* Connection status */}
+      {/* Connection */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <div style={{
           width: 6, height: 6, borderRadius: '50%',
           background: connected ? '#00ff88' : '#ff3355',
           boxShadow: connected ? '0 0 6px #00ff88' : '0 0 6px #ff3355',
-          animation: connected ? 'pulse-dot 1.5s infinite' : 'none',
         }} />
         <span style={{ color: connected ? '#00ff88' : '#ff3355' }}>
           {connected ? 'UPLINK OK' : 'NO SIGNAL'}
@@ -63,7 +57,9 @@ export default function StatusBar({ connected, data, onStep, stepping, simTime }
         <span style={{ color: '#3a5a78' }}>SATS </span>{satCount}
         <span style={{ margin: '0 8px', color: '#3a5a78' }}>|</span>
         <span style={{ color: '#3a5a78' }}>DEBRIS </span>
-        <span style={{ color: debrisCount > 1000 ? '#ffaa00' : '#7aa8c8' }}>{debrisCount.toLocaleString()}</span>
+        <span style={{ color: debrisCount > 1000 ? '#ffaa00' : '#7aa8c8' }}>
+          {debrisCount.toLocaleString()}
+        </span>
       </div>
 
       <div style={{ color: '#3a5a78' }}>|</div>
@@ -71,13 +67,20 @@ export default function StatusBar({ connected, data, onStep, stepping, simTime }
       {/* Sim time */}
       <div style={{ color: '#7aa8c8', whiteSpace: 'nowrap' }}>
         <span style={{ color: '#3a5a78' }}>SIM-T </span>
-        <span style={{ color: '#00c8ff' }}>{ts.toString().slice(0, 19).replace('T', ' ')}</span>
+        <span style={{ color: '#00c8ff' }}>
+          {ts.toString().slice(0, 19).replace('T', ' ')}
+        </span>
       </div>
+
+      <div style={{ color: '#3a5a78' }}>|</div>
+
+      {/* AI Briefing button — right here in the top bar */}
+      <AIBriefing snapshotData={data} />
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* Sim controls */}
+      {/* Sim step controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ color: '#3a5a78', fontSize: 10 }}>STEP</span>
         <select

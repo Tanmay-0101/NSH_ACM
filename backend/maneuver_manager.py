@@ -218,7 +218,7 @@ def schedule_maneuver(maneuver_request) -> tuple[bool, str, Optional[float]]:
         sid: state
         for sid, state in state_manager.satellites.items()
     }
-    from datetime import datetime, timezone
-    now_s = datetime.now(timezone.utc).timestamp()
+    # from datetime import datetime, timezone
+    now_s = state_manager.get_sim_time_s()    
 
     return queue.schedule(maneuver_request, sat_states, now_s)
