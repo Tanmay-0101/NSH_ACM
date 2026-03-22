@@ -17,6 +17,7 @@ export default function App() {
   const satellites = Array.isArray(data?.satellites) ? data.satellites : [];
   const debrisCloud = Array.isArray(data?.debris_cloud) ? data.debris_cloud : [];
   const cdmWarnings = data?.active_cdm_warnings || 0;
+  const efficiency = data?.efficiency_stats || {};
 
   const handleSelectSat = useCallback((id) => {
     setSelectedSat(prev => prev === id ? null : id);
@@ -97,6 +98,7 @@ export default function App() {
               satellites={satellites}
               selectedSat={selectedSat}
               onSelectSat={handleSelectSat}
+              efficiency={efficiency}
             />
           </div>
         </div>

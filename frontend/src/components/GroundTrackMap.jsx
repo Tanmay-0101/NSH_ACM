@@ -1,7 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
-
-// Pure Canvas 2D ground track — PixiJS-style performance via raw Canvas API
-// Handles 10k+ debris objects at 60fps
+import React, { useEffect, useRef } from 'react';
 
 const WORLD_W = 800;
 const WORLD_H = 400;
@@ -12,19 +9,39 @@ function latlonToXY(lat, lon, w, h) {
   return [x, y];
 }
 
-// Terminator line: solar declination approx
 function getSolarDeclination() {
   const now = new Date();
   const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
   return -23.45 * Math.cos((2 * Math.PI / 365) * (dayOfYear + 10));
 }
 
+// Simple ground track predictor — advance lat/lon along orbit
+// Uses approximate orbital period for LEO (~92 min) 
+function predictGroundTrack(lat, lon, steps = 30, stepMinutes = 3) {
+  const points = [];
+  const EARTH_ROT_DEG_PER_MIN = 0.25; // Earth rotates ~0.25°/min
+  const ORBIT_INC_DEG = 51.6; // approximate ISS-like inclination
+  
+  let curLat = lat;
+  let curLon = lon;
+  
+  for (let i = 0; i < steps; i++) {
+    // Approximate: move along great circle, account for Earth rotation
+    curLon = ((curLon - EARTH_ROT_DEG_PER_MIN * stepMinutes + 180) % 360) - 180;
+    // Simple sinusoidal lat oscillation based on inclination
+    const t = (i * stepMinutes) / (92); // fraction of orbital period
+    curLat = ORBIT_INC_DEG * Math.sin(2 * Math.PI * t + Math.asin(lat / ORBIT_INC_DEG || 0));
+    curLat = Math.max(-90, Math.min(90, curLat));
+    points.push([curLat, curLon]);
+  }
+  return points;
+}
+
 export default function GroundTrackMap({ satellites = [], debrisCloud = [], selectedSat, onSelectSat }) {
   const canvasRef = useRef(null);
-  const animRef = useRef(null);
+  const animRef   = useRef(null);
   const trailsRef = useRef({});
 
-  // Update trails
   useEffect(() => {
     satellites.forEach(sat => {
       if (!trailsRef.current[sat.id]) trailsRef.current[sat.id] = [];
@@ -38,8 +55,7 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const W = canvas.width;
-    const H = canvas.height;
+    const W = canvas.width, H = canvas.height;
 
     function draw() {
       ctx.clearRect(0, 0, W, H);
@@ -60,7 +76,7 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
       }
 
-      // Equator & Prime Meridian highlight
+      // Equator & Prime Meridian
       ctx.strokeStyle = 'rgba(0,200,255,0.15)';
       ctx.lineWidth = 1;
       const [, eqY] = latlonToXY(0, 0, W, H);
@@ -69,8 +85,8 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
       ctx.beginPath(); ctx.moveTo(pmX, 0); ctx.lineTo(pmX, H); ctx.stroke();
 
       // Terminator shadow
-      const decl = getSolarDeclination();
-      const termX = ((new Date().getUTCHours() * 60 + new Date().getUTCMinutes()) / 1440) * W;
+      const now = new Date();
+      const termX = ((now.getUTCHours() * 60 + now.getUTCMinutes()) / 1440) * W;
       const shadowX = (termX + W / 2) % W;
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
       if (shadowX + W / 2 > W) {
@@ -81,45 +97,70 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
 
       // Ground stations
       const groundStations = [
-        { name: 'ISTRAC', lat: 13.03, lon: 77.52 },
-        { name: 'Svalbard', lat: 78.23, lon: 15.41 },
-        { name: 'Goldstone', lat: 35.43, lon: -116.89 },
-        { name: 'Punta Arenas', lat: -53.15, lon: -70.92 },
-        { name: 'IIT Delhi', lat: 28.55, lon: 77.19 },
-        { name: 'McMurdo', lat: -77.85, lon: 166.67 },
+        { name: 'ISTRAC',     lat: 13.03,   lon: 77.52   },
+        { name: 'Svalbard',   lat: 78.23,   lon: 15.41   },
+        { name: 'Goldstone',  lat: 35.43,   lon: -116.89 },
+        { name: 'Punta',      lat: -53.15,  lon: -70.92  },
+        { name: 'IIT Delhi',  lat: 28.55,   lon: 77.19   },
+        { name: 'McMurdo',    lat: -77.85,  lon: 166.67  },
       ];
       groundStations.forEach(gs => {
         const [x, y] = latlonToXY(gs.lat, gs.lon, W, H);
-        ctx.strokeStyle = 'rgba(0,255,136,0.5)';
+        // Outer ring — white/dim
+        ctx.strokeStyle = 'rgba(180,180,180,0.5)';
         ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(x, y, 6, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(0,255,136,0.8)';
-        ctx.beginPath();
-        ctx.arc(x, y, 2, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.stroke();
+        // Inner filled circle — white
+        ctx.fillStyle = 'rgba(200,200,200,0.25)';
+        ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill();
+        // Center dot
+        ctx.fillStyle = 'rgba(220,220,220,0.9)';
+        ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+        // Cross inside circle
+        ctx.strokeStyle = 'rgba(220,220,220,0.7)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x, y + 4); ctx.stroke();
+        // Label — small and dim
+        ctx.fillStyle = 'rgba(180,180,180,0.6)';
+        ctx.font = '7px Share Tech Mono, monospace';
+        ctx.fillText(gs.name, x + 9, y + 3);
       });
 
-      // Debris cloud (tiny dots, batched)
+      // Debris cloud
       ctx.fillStyle = 'rgba(255,100,50,0.5)';
       debrisCloud.forEach(([, lat, lon]) => {
         const [x, y] = latlonToXY(lat, lon, W, H);
         ctx.fillRect(x - 0.5, y - 0.5, 1.5, 1.5);
       });
 
-      // Satellite trails
+      // Historical trails (last 90 min)
       Object.entries(trailsRef.current).forEach(([satId, trail]) => {
         if (trail.length < 2) return;
         const isSel = satId === selectedSat;
         ctx.strokeStyle = isSel ? 'rgba(0,200,255,0.6)' : 'rgba(0,200,255,0.2)';
         ctx.lineWidth = isSel ? 1.5 : 0.8;
-        ctx.setLineDash([3, 3]);
+        ctx.setLineDash([]);
         ctx.beginPath();
         trail.forEach(([lat, lon], i) => {
           const [x, y] = latlonToXY(lat, lon, W, H);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      });
+
+      // Predicted trajectory (dashed, next 90 min)
+      satellites.forEach(sat => {
+        const predicted = predictGroundTrack(sat.lat, sat.lon, 30, 3);
+        if (predicted.length < 2) return;
+        const isSel = sat.id === selectedSat;
+        ctx.strokeStyle = isSel ? 'rgba(255,200,0,0.7)' : 'rgba(255,200,0,0.25)';
+        ctx.lineWidth = isSel ? 1.2 : 0.7;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        predicted.forEach(([lat, lon], i) => {
+          const [x, y] = latlonToXY(lat, lon, W, H);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         });
         ctx.stroke();
         ctx.setLineDash([]);
@@ -129,29 +170,40 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
       satellites.forEach(sat => {
         const [x, y] = latlonToXY(sat.lat, sat.lon, W, H);
         const isSel = sat.id === selectedSat;
-        const color = sat.status === 'NOMINAL' ? '#00ff88'
-          : sat.status === 'EVADING' ? '#ffaa00'
-          : sat.status === 'GRAVEYARD' ? '#444' : '#ff3355';
+        const color = sat.status === 'NOMINAL'     ? '#00ff88'
+          : sat.status === 'DANGER'      ? '#ff3355'
+          : sat.status === 'MANEUVERING' ? '#ffaa00'
+          : sat.status === 'EVADING'     ? '#ffaa00'
+          : sat.status === 'LOW_FUEL'    ? '#ffaa00'
+          : sat.status === 'CRITICAL'    ? '#ff3355'
+          : sat.status === 'GRAVEYARD'   ? '#555555'
+          : '#ff3355';
+
+        // Pulsing red ring when DANGER
+        if (sat.status === 'DANGER') {
+          const pulse = 0.3 + 0.5 * Math.abs(Math.sin(Date.now() / 400));
+          ctx.strokeStyle = '#ff3355';
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = pulse;
+          ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
 
         if (isSel) {
           ctx.strokeStyle = color;
           ctx.lineWidth = 1;
           ctx.globalAlpha = 0.4;
-          ctx.beginPath();
-          ctx.arc(x, y, 14, 0, Math.PI * 2);
-          ctx.stroke();
+          ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.stroke();
           ctx.globalAlpha = 1;
         }
 
-        // Diamond shape
+        // Diamond — larger when DANGER
+        const size = sat.status === 'DANGER' ? 7 : 5;
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x + 4, y);
-        ctx.lineTo(x, y + 5);
-        ctx.lineTo(x - 4, y);
-        ctx.closePath();
-        ctx.fill();
+        ctx.moveTo(x, y - size); ctx.lineTo(x + size - 1, y);
+        ctx.lineTo(x, y + size); ctx.lineTo(x - (size - 1), y);
+        ctx.closePath(); ctx.fill();
 
         if (isSel || satellites.length < 20) {
           ctx.fillStyle = 'rgba(232,244,255,0.85)';
@@ -173,7 +225,7 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top) * scaleY;
+    const my = (e.clientY - rect.top)  * scaleY;
 
     let closest = null, minDist = 20;
     satellites.forEach(sat => {
@@ -185,12 +237,8 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
   }
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={WORLD_W}
-      height={WORLD_H}
+    <canvas ref={canvasRef} width={WORLD_W} height={WORLD_H}
       onClick={handleClick}
-      style={{ width: '100%', height: '100%', cursor: 'crosshair', display: 'block' }}
-    />
+      style={{ width: '100%', height: '100%', cursor: 'crosshair', display: 'block' }} />
   );
 }

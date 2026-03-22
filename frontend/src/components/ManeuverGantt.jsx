@@ -66,10 +66,10 @@ export default function ManeuverGantt({ maneuverHistory = [] }) {
 
   // Demo blocks when no real history
   const demoBlocks = [
-    { id: 1, satId: 'Alpha-04', burnId: 'EVASION_1', type: 'EVASION', time: '14:15:30', status: 'EXECUTED', dvMag: 0.015 },
-    { id: 2, satId: 'Alpha-04', burnId: 'RECOVERY_1', type: 'RECOVERY', time: '15:45:30', status: 'SCHEDULED', dvMag: 0.014 },
-    { id: 3, satId: 'Beta-07', burnId: 'EVASION_1', type: 'EVASION', time: '16:00:00', status: 'SCHEDULED', dvMag: 0.008 },
-    { id: 4, satId: 'Gamma-12', burnId: 'EOL_1', type: 'EOL', time: '18:30:00', status: 'PENDING', dvMag: 0.012 },
+    // { id: 1, satId: 'Alpha-04', burnId: 'EVASION_1', type: 'EVASION', time: '14:15:30', status: 'EXECUTED', dvMag: 0.015 },
+    // { id: 2, satId: 'Alpha-04', burnId: 'RECOVERY_1', type: 'RECOVERY', time: '15:45:30', status: 'SCHEDULED', dvMag: 0.014 },
+    // { id: 3, satId: 'Beta-07', burnId: 'EVASION_1', type: 'EVASION', time: '16:00:00', status: 'SCHEDULED', dvMag: 0.008 },
+    // { id: 4, satId: 'Gamma-12', burnId: 'EOL_1', type: 'EOL', time: '18:30:00', status: 'PENDING', dvMag: 0.012 },
   ];
 
   const display = maneuverHistory.length > 0 ? filtered : demoBlocks;

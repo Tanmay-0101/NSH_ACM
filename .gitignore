@@ -5,3 +5,5 @@ frontend/node_modules/.bin/
 
 frontend/node_modules/
 frontend/node_modules/.cache/babel-loader/0b88f8aaf87ff19b7d744478aee5a6411a62708a4682815bdf62dec85bef081c.json
+backend/venv/
+
