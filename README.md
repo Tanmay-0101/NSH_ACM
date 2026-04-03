@@ -7,7 +7,7 @@
 
 ## What We Built
 
-NSH_ACM is a full-stack **Autonomous Constellation Manager** that monitors a fleet of satellites, detects potential collisions with space debris, and automatically fires thrusters to avoid them — all without any human intervention. The system combines real orbital mechanics, a live mission control dashboard, an AI-powered fleet briefing engine, and a complete REST API that can be stress-tested by the hackathon grader.
+NSH_ACM is a full-stack **Autonomous Constellation Manager** that automatically detects conjunctions and schedules avoidance maneuvers with minimal human intervention. The system combines real orbital mechanics, a live mission control dashboard, an AI-powered fleet briefing engine, and a complete REST API that can be stress-tested by the hackathon grader.
 
 The key differentiator is the **Autonomous COLA Engine** (`autonomous_cola.py`) — when the system detects a conjunction under 100m, it automatically calculates, schedules, and executes both the evasion burn and the paired recovery burn without a single manual API call.
 
