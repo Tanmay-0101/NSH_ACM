@@ -41,6 +41,7 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
   const canvasRef = useRef(null);
   const animRef   = useRef(null);
   const trailsRef = useRef({});
+  const mapImageRef = useRef(null);
 
   useEffect(() => {
     satellites.forEach(sat => {
@@ -52,6 +53,14 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
   }, [satellites]);
 
   useEffect(() => {
+    const img = new Image();
+    img.src = '/world_map.jpg'; 
+    img.onload = () => {
+      mapImageRef.current = img;
+    };
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -60,9 +69,16 @@ export default function GroundTrackMap({ satellites = [], debrisCloud = [], sele
     function draw() {
       ctx.clearRect(0, 0, W, H);
 
-      // Ocean background
-      ctx.fillStyle = '#020d1a';
-      ctx.fillRect(0, 0, W, H);
+      // Earth map background
+      if (mapImageRef.current) {
+        ctx.drawImage(mapImageRef.current, 0, 0, W, H);
+
+        ctx.fillStyle = 'rgba(0, 10, 20, 0.45)';
+        ctx.fillRect(0, 0, W, H);
+      } else {
+        ctx.fillStyle = '#020d1a';
+        ctx.fillRect(0, 0, W, H);
+      }
 
       // Grid lines
       ctx.strokeStyle = 'rgba(0,200,255,0.05)';
